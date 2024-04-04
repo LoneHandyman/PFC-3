@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from tf_components import PositionalEncoding
+from tf_utils import PositionalEncoding
 
 class F2NetHead(nn.Module):
     def __init__(self, emb_dim: int, d_model: int) -> None:
