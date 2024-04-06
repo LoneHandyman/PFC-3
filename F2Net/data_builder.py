@@ -42,27 +42,10 @@ class TextDatasetLoader:
         data = data.view(self.batch_size, num_batches)
         return data
 
+    def vocab_length(self):
+        return len(self.vocab)
+
 def get_batch(data, seq_len, idx):
     src = data[:, idx:idx+seq_len]                   
     target = data[:, idx+1:idx+seq_len+1]             
     return src, target
-
-# Uso de la clase TextDatasetLoader
-dataset_loader = TextDatasetLoader(
-    dataset_name='wikitext',
-    dataset_config='wikitext-2-raw-v1',
-    tokenizer_name='basic_english',
-    min_freq=3,
-    batch_size=128
-)
-
-train_data = dataset_loader.train_data
-validation_data = dataset_loader.validation_data
-test_data = dataset_loader.test_data
-
-print(train_data[0], train_data[0].size())
-
-src, target = get_batch(train_data, 50, 0)
-
-print(src.size(), target.size())
-print(src, '\n', target)

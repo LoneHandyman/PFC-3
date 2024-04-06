@@ -1,3 +1,4 @@
+from typing import Optional
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -75,19 +76,28 @@ class F2NetBlock(nn.Module):
         return out
     
 class F2NetModel(nn.Module):
-    def __init__(self, n_blocks: int, heads: int, vocab: int, emb_dim: int, hidden: int) -> None:
+    def __init__(self, n_blocks: int, heads: int, vocab_len: int, 
+                 emb_dim: int, hidden: int, freeze_emb: bool = True) -> None:
         super(F2NetModel, self).__init__()
         
-        self.embedding = nn.Embedding(vocab, emb_dim)
+        self.embedding = nn.Embedding(vocab_len, emb_dim)
+
+        if freeze_emb:
+            for param in self.embedding.parameters():
+                param.requires_grad = False
+
         self.pos_encoding = PositionalEncoding(emb_dim)
         self.blocks = nn.ModuleList([
             F2NetBlock(heads, emb_dim, hidden) for _ in range(n_blocks)
         ])
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor]=None):
         x = self.pos_encoding(self.embedding(x))
+
+        if y:
+            y = self.embedding(y)
 
         for block in self.blocks:
             x = block(x)
 
-        return x
+        return x, y
