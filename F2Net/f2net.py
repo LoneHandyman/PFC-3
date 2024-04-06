@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -91,10 +91,10 @@ class F2NetModel(nn.Module):
             F2NetBlock(heads, emb_dim, hidden) for _ in range(n_blocks)
         ])
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor]=None):
+    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor | None]:
         x = self.pos_encoding(self.embedding(x))
 
-        if y:
+        if y is not None:
             y = self.embedding(y)
 
         for block in self.blocks:
