@@ -91,7 +91,7 @@ class F2NetModel(nn.Module):
             F2NetBlock(heads, emb_dim, hidden) for _ in range(n_blocks)
         ])
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor | None]:
+    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor]=None) -> Tuple[torch.Tensor, torch.Tensor | None]:
         x = self.pos_encoding(self.embedding(x))
 
         if y is not None:

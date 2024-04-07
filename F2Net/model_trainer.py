@@ -6,15 +6,14 @@ from typing import Callable
 from data_builder import get_batch
 
 class Trainer:
-    def __init__(self, model, optimizer, penalty):
+    def __init__(self, name, model, optimizer, penalty):
         self.model = model
         self.optimizer = optimizer
         self.penalty = penalty
+
+        self.name = name
         self.epochs2save = 0
         self.path = ''
-
-    def loadFromFile(self, path):
-        pass
 
     def saveSettings(self, path, epochs2save):
         self.path = path
@@ -38,7 +37,9 @@ class Trainer:
         data = data[:, :num_batches - (num_batches -1) % seq_len]
         num_batches = data.shape[-1]
         
-        for idx in tqdm(range(0, num_batches - 1, seq_len), desc='Training: ',leave=False):
+        train_bar = tqdm(range(0, num_batches - 1, seq_len), desc='Training: ',leave=False)
+
+        for idx in train_bar:
             self.optimizer.zero_grad()
 
             src, target = get_batch(data, seq_len, idx)
@@ -51,5 +52,7 @@ class Trainer:
             self.optimizer.step()
 
             epoch_loss += loss.item() * seq_len
+
+            train_bar.set_postfix_str(f"Loss: {loss.item():.4f}")
             
         return epoch_loss / num_batches

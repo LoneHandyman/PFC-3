@@ -1,4 +1,4 @@
-from f2net import F2NetModel
+from F2Net.models.f2net import F2NetModel
 from data_builder import TextDatasetLoader, get_batch
 import torch
 
@@ -9,14 +9,14 @@ wiki2 = TextDatasetLoader(
     dataset_config='wikitext-2-raw-v1',
     tokenizer_name='basic_english',
     min_freq=3,
-    batch_size=64
+    batch_size=128
 )
 
 train_data = wiki2.train_data
 validation_data = wiki2.validation_data
 test_data = wiki2.test_data
 
-print(train_data[0], train_data[0].size())
+print(train_data.size())
 
 src, target = get_batch(train_data, 32, 0)
 
