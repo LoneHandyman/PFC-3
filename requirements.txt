@@ -1,0 +1,6 @@
+torch
+torchtext
+datasets
+portalocker
+torchdata
+tqdm
