@@ -65,15 +65,15 @@ class F2NetBlock(nn.Module):
     def __init__(self, heads: int, emb_dim: int, hidden: int) -> None:
         super(F2NetBlock, self).__init__()
 
-        self.mixer = F2NetMHM(heads, emb_dim)
-        self.ffn = F2NetFFN(emb_dim, hidden)
+        self.block = nn.ModuleList([F2NetMHM(heads, emb_dim),
+                                    F2NetFFN(emb_dim, hidden)
+        ])
 
     def forward(self, x: torch.Tensor):
-        x = self.mixer(x)
+        for module in self.block:
+            x = module(x)
 
-        out = self.ffn(x)
-
-        return out
+        return x
     
 class F2NetModel(nn.Module):
     def __init__(self, n_blocks: int, heads: int, vocab_len: int, 

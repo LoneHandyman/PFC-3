@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     op = int(sys.argv[1])
 
-    model_conf = {'n_blocks':2,
+    model_conf = {'n_blocks':8,
                   'heads':8, 
                   'vocab_len': wiki2.vocab_length(), 
                   'emb_dim': 128, 
@@ -68,23 +68,33 @@ if __name__ == '__main__':
     if op == 0:
         model = F2NetModel(**model_conf).to(device)
 
-        optimizer = optim.Adam(model.parameters(), 1e-4)
+        optimizer = optim.Adam(model.parameters(), lr=1e-4)
         penalty = nn.CosineEmbeddingLoss()
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, 
+                                                            patience=0)
 
-        trainer = Trainer('f2net-ne-(lm)-v1', model, optimizer, penalty)
+        trainer = Trainer('f2net-nge-(lm)-v1', model, optimizer, penalty, lr_scheduler)
 
-        trainer.saveSettings('weights', 16)
+        trainer.saveSettings('weights')
 
-        print('loss:', trainer.train(noGradEmb_Call, train_data, 128, 0.25, device))
+        trainer.setDataLoaders(train_data, validation_data)
+
+        print('loss:', trainer.train(noGradEmb_Call, seq_len=128, n_epochs=100, 
+                                     clip=0.25, device=device))
 
     elif op == 1:
         model = F2NetForLanguageModeling(**model_conf).to(device)
 
-        optimizer = optim.Adam(model.parameters(), 1e-4)
+        optimizer = optim.Adam(model.parameters(), lr=1e-4)
         penalty = nn.CrossEntropyLoss()
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, 
+                                                            patience=0)
 
-        trainer = Trainer('f2net-tk-(lm)-v1', model, optimizer, penalty)
+        trainer = Trainer('f2net-tkc-(lm)-v1', model, optimizer, penalty, lr_scheduler)
 
-        trainer.saveSettings('weights', 16)
+        trainer.setDataLoaders(train_data, validation_data)
 
-        print('loss:', trainer.train(tokenClassifier_Call, train_data, 128, 0.25, device))
+        trainer.saveSettings('weights')
+
+        print('loss:', trainer.train(tokenClassifier_Call, seq_len=128, n_epochs=100, 
+                                     clip=0.25, device=device))
