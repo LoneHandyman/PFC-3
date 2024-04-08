@@ -26,6 +26,8 @@ def mAccuracyF1(logits, target, device, dest=None):
     acc_metric = Accuracy(task="multiclass", num_classes=logits.size(-1)).to(device)
     f1_metric = F1Score(task="multiclass", num_classes=logits.size(-1)).to(device)
 
+    seq_len = logits.size(-2)
+
     probs = F.softmax(logits, dim=-1)
     pTokens = torch.argmax(probs, dim=-1)
 
@@ -35,5 +37,5 @@ def mAccuracyF1(logits, target, device, dest=None):
     f1 = f1_metric.compute()
 
     if dest is not None:
-        adderIn(dest, 'acc', acc.item())
-        adderIn(dest, 'f1', f1.item())
+        adderIn(dest, 'acc', acc.item() * seq_len)
+        adderIn(dest, 'f1', f1.item() * seq_len)

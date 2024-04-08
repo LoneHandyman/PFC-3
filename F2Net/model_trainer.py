@@ -139,5 +139,7 @@ class Trainer:
             for key, result in self.metric_results.items():
                 print(f'[{key}]:{result:.4f}', end=', ')
             print(f'loss: train({train_loss:.3f}), eval({eval_loss:.3f})>')
+            
+            self.metric_results.clear()
             #print(f'\tTrain Perplexity: {math.exp(train_loss):.3f}')
             #print(f'\tValid Perplexity: {math.exp(eval_loss):.3f}')
