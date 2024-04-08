@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-import math
+import time
+
 from tqdm import tqdm
 
 from typing import Callable, Tuple
@@ -91,11 +92,15 @@ class Trainer:
 
         train_bar.set_description_str(f"Epoch[{epoch_step[0]}/{epoch_step[1]}]")
 
+        total_time = 0
+
         for idx in train_bar:
             self.optimizer.zero_grad()
 
             src, target = get_batch(data, seq_len, idx)
             src, target = src.to(device), target.to(device)
+
+            start_time = time.time()
 
             loss, pred, target = self.fefo_steps(self.model, self.penalty, src, target, device)
             
@@ -103,11 +108,13 @@ class Trainer:
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), clip)
             self.optimizer.step()
 
+            total_time += (time.time() - start_time) * 1000
+
             epoch_loss += loss.item() * seq_len
 
             train_bar.set_postfix_str(f"Loss: {loss.item():.4f}")
-            
-        return epoch_loss / num_batches
+
+        return epoch_loss / num_batches, total_time / num_batches
     
     def train(self, seq_len: int, n_epochs: int, clip: float, device: torch.device):
         self._check_params()
@@ -117,7 +124,8 @@ class Trainer:
         self.model.to(device)
 
         for epoch in range(n_epochs):
-            train_loss = self.fit(seq_len, clip, device, (epoch+1, n_epochs))
+
+            train_loss, timexbatch = self.fit(seq_len, clip, device, (epoch+1, n_epochs))
             eval_loss = self.evaluate(seq_len, device)
             
             self.lr_scheduler.step(eval_loss)
@@ -126,8 +134,10 @@ class Trainer:
                 best_eval_loss = eval_loss
                 torch.save(self.model.state_dict(), self.path + self.name + '.pt')
 
-            print(f'Completed epoch #{epoch+1}:')
+            print(f'Completed epoch #{epoch+1} [time/batch={timexbatch:.3f} ms]:')
+            print('\t', end='<')
             for key, result in self.metric_results.items():
-                print(f'\tMetric[{key}] = {result:.4f}')
+                print(f'[{key}]:{result:.4f}', end=', ')
+            print(f'loss: train({train_loss:.3f}), eval({eval_loss:.3f})>')
             #print(f'\tTrain Perplexity: {math.exp(train_loss):.3f}')
             #print(f'\tValid Perplexity: {math.exp(eval_loss):.3f}')

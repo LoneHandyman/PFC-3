@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from tf_utils import PositionalEncoding
+from models.zutils import PositionalEncoding
 
 import math
 
@@ -24,9 +24,9 @@ class TransformerModel(nn.Module):
         return mask
 
     def forward(self, src):
-        if self.src_mask is None or self.src_mask.size(0) != len(src):
+        if self.src_mask is None or self.src_mask.size(-1) != src.size(-1):
             device = src.device
-            mask = self._generate_square_subsequent_mask(len(src)).to(device)
+            mask = self._generate_square_subsequent_mask(src.size(-1)).to(device)
             self.src_mask = mask
 
         src = self.encoder(src) * math.sqrt(self.d_model)
@@ -34,3 +34,4 @@ class TransformerModel(nn.Module):
         output = self.transformer_encoder(src, self.src_mask)
         output = self.decoder(output)
         return output
+

@@ -1,5 +1,7 @@
 torch
 torchtext
+torcheval
+torchmetrics
 datasets
 portalocker
 torchdata

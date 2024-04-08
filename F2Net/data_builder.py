@@ -45,6 +45,15 @@ class TextDatasetLoader:
     def vocab_length(self):
         return len(self.vocab)
 
+    def int2token(self, x: torch.LongTensor):
+        itos = self.vocab.get_itos()
+        tokens = []
+        for t in x:
+            seq = [itos[i] for i in t]
+            tokens.append(seq)
+
+        return tokens
+
 def get_batch(data, seq_len, idx):
     src = data[:, idx:idx+seq_len]                   
     target = data[:, idx+1:idx+seq_len+1]             

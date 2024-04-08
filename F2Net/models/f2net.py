@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from tf_utils import PositionalEncoding
+from models.zutils import PositionalEncoding
 
 class F2NetHead(nn.Module):
     def __init__(self, d_model: int, d: int) -> None:

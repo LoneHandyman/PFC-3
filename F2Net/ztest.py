@@ -1,4 +1,4 @@
-from F2Net.models.f2net import F2NetModel
+from models.f2net import F2NetModel
 from data_builder import TextDatasetLoader, get_batch
 import torch
 
@@ -22,7 +22,9 @@ src, target = get_batch(train_data, 32, 0)
 
 print(src.size(), target.size())
 print(src, '\n', target)
-
+print(wiki2.int2token(src))
+print(wiki2.int2token(target))
+exit(0)
 model_conf = {'n_blocks':4,
               'heads':8, 
               'vocab_len': wiki2.vocab_length(), 
