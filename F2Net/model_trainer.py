@@ -16,6 +16,10 @@ class Trainer:
         self.train_data = None
         self.eval_data = None
 
+        self.fefo_steps = None
+        self.metric_steps = []
+        self.metric_results = {}
+
         self.name = name
         self.epochs2save = 0
         self.path = ''
@@ -24,7 +28,17 @@ class Trainer:
         self.train_data = traind
         self.eval_data = evald
 
-    def saveSettings(self, path):
+    def setFeedForwardProcedure(self, fefo_steps: Callable[[nn.Module, nn.Module, 
+                                                            torch.LongTensor, 
+                                                            torch.LongTensor, torch.device], 
+                                                            Tuple[torch.Tensor, torch.Tensor, 
+                                                                  torch.Tensor]]):
+        self.fefo_steps = fefo_steps
+
+    def setMetrics(self, metric_list):
+        self.metric_steps = metric_list
+
+    def saveSettings(self, path: str):
         self.path = path
         if self.path[-1] != '/':
             self.path += '/'
@@ -33,10 +47,9 @@ class Trainer:
         num_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print(f'The model [{self.name}] has {num_params:,} trainable parameters')
 
-    def evaluate(self, fefo_steps: Callable[[nn.Module, nn.Module, torch.LongTensor, 
-                                            torch.LongTensor, torch.device], torch.Tensor],
-                                            seq_len: int, device: torch.device):
+    def evaluate(self, seq_len: int, device: torch.device):
         assert(self.eval_data is not None)
+        assert(self.fefo_steps is not None)
 
         epoch_loss = 0
         self.model.eval()
@@ -50,16 +63,22 @@ class Trainer:
                 src, target = get_batch(data, seq_len, idx)
                 src, target = src.to(device), target.to(device)
 
-                loss = fefo_steps(self.model, self.penalty, src, target, device)
+                loss, pred, target = self.fefo_steps(self.model, self.penalty, src, target, device)
 
                 epoch_loss += loss.item() * seq_len
+
+                for metric in self.metric_steps:
+                    metric(pred, target, device, self.metric_results)
+
+        for key, _ in self.metric_results.items():
+            self.metric_results[key] /= num_batches
+
         return epoch_loss / num_batches
 
-    def fit(self, fefo_steps: Callable[[nn.Module, nn.Module, torch.LongTensor, 
-                                        torch.LongTensor, torch.device], torch.Tensor],
-                                        seq_len: int, clip: float, device: torch.device,
-                                        epoch_step: Tuple[int, int]):
+    def fit(self, seq_len: int, clip: float, device: torch.device, 
+            epoch_step: Tuple[int, int]):
         assert(self.train_data is not None)
+        assert(self.fefo_steps is not None)
 
         epoch_loss = 0
         self.model.train()
@@ -78,7 +97,7 @@ class Trainer:
             src, target = get_batch(data, seq_len, idx)
             src, target = src.to(device), target.to(device)
 
-            loss = fefo_steps(self.model, self.penalty, src, target, device)
+            loss, pred, target = self.fefo_steps(self.model, self.penalty, src, target, device)
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), clip)
@@ -90,23 +109,25 @@ class Trainer:
             
         return epoch_loss / num_batches
     
-    def train(self, fefo_steps: Callable[[nn.Module, nn.Module, torch.LongTensor, 
-                                        torch.LongTensor, torch.device], torch.Tensor],
-                                        seq_len: int, n_epochs: int, clip: float, device: torch.device):
+    def train(self, seq_len: int, n_epochs: int, clip: float, device: torch.device):
         self._check_params()
 
-        best_valid_loss = float('inf')
+        best_eval_loss = float('inf')
+
+        self.model.to(device)
 
         for epoch in range(n_epochs):
-            train_loss = self.fit(fefo_steps, seq_len, clip, device, (epoch+1, n_epochs))
-            valid_loss = self.evaluate(fefo_steps, seq_len, device)
+            train_loss = self.fit(seq_len, clip, device, (epoch+1, n_epochs))
+            eval_loss = self.evaluate(seq_len, device)
             
-            self.lr_scheduler.step(valid_loss)
+            self.lr_scheduler.step(eval_loss)
 
-            if valid_loss < best_valid_loss:
-                best_valid_loss = valid_loss
+            if eval_loss < best_eval_loss:
+                best_eval_loss = eval_loss
                 torch.save(self.model.state_dict(), self.path + self.name + '.pt')
 
             print(f'Completed epoch #{epoch+1}:')
-            print(f'\tTrain Perplexity: {math.exp(train_loss):.3f}')
-            print(f'\tValid Perplexity: {math.exp(valid_loss):.3f}')
+            for key, result in self.metric_results.items():
+                print(f'\tMetric[{key}] = {result:.4f}')
+            #print(f'\tTrain Perplexity: {math.exp(train_loss):.3f}')
+            #print(f'\tValid Perplexity: {math.exp(eval_loss):.3f}')

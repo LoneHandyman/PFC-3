@@ -1,13 +1,21 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from models.f2net import F2NetModel
-from models.f2net_lmc import F2NetForLanguageModeling
+from models.f2net import F2NetModel, F2Net2Vocab
+from models.fnet import FNetModel
+from models.transformer import TransformerModel
+
 from data_builder import TextDatasetLoader
 from model_trainer import Trainer
 
+from model_metrics import mPerplexity, mAccuracyF1
+
 import sys
+import json
 
 def tokenClassifier_Call(model: nn.Module, penalty: nn.CrossEntropyLoss, 
                         src: torch.LongTensor, target: torch.LongTensor,
@@ -16,10 +24,10 @@ def tokenClassifier_Call(model: nn.Module, penalty: nn.CrossEntropyLoss,
     logits = model(src)
 
     prediction = logits.reshape(batch_size * seq_len, -1)   
-    target = target.reshape(-1)
-    loss = penalty(prediction, target)
+    target_r = target.reshape(-1)
+    loss = penalty(prediction, target_r)
 
-    return loss
+    return loss, logits, target
 
 def noGradEmb_Call(model: F2NetModel, penalty: nn.CosineEmbeddingLoss, 
                       src: torch.LongTensor, target: torch.LongTensor,
@@ -32,10 +40,28 @@ def noGradEmb_Call(model: F2NetModel, penalty: nn.CosineEmbeddingLoss,
 
     loss = penalty(y_pred, y_true, torch.ones(batch_size * seq_len).to(device))
 
-    return loss
+    return loss, y_pred, y_true
+
+def model_factory(config_path: str, op: int, vocab_len: int):
+    with open(config_path, 'r') as fjsn:
+        gConfig = json.load(fjsn)
+    
+    if op == 0:
+        config = gConfig['f2net']
+        return 'f2net-nge-(lm)-v1', F2NetModel(vocab_len=vocab_len, **config), nn.CosineEmbeddingLoss(), noGradEmb_Call, 1e-4
+    elif op==1:
+        config = gConfig['f2net']
+        return 'f2net-tkc-(lm)-v1', F2Net2Vocab(vocab_len=vocab_len, **config), nn.CrossEntropyLoss(), tokenClassifier_Call, 1e-4
+    elif op==2:
+        config = gConfig['fnet']
+        return 'fnet-tkc-(lm)', FNetModel(vocab_len=vocab_len, **config), nn.CrossEntropyLoss(), tokenClassifier_Call, 1e-4
+    elif op==3:
+        config = gConfig['transformer']
+        return 'tfnet-tkc-(lm)', TransformerModel(vocab_len=vocab_len, **config), nn.CrossEntropyLoss(), tokenClassifier_Call, 1e-5
 
 
 if __name__ == '__main__':
+
     if len(sys.argv) == 1:
         print('Zero arguments provided.')
         exit(0)
@@ -49,7 +75,7 @@ if __name__ == '__main__':
         dataset_name='wikitext',
         dataset_config='wikitext-2-raw-v1',
         tokenizer_name='basic_english',
-        min_freq=3,
+        min_freq=30,
         batch_size=128
     )
 
@@ -59,42 +85,16 @@ if __name__ == '__main__':
 
     op = int(sys.argv[1])
 
-    model_conf = {'n_blocks':8,
-                  'heads':8, 
-                  'vocab_len': wiki2.vocab_length(), 
-                  'emb_dim': 128, 
-                  'hidden':128}
+    name, model, penalty, fefo, lr = model_factory('models/config.json', op, wiki2.vocab_length())
 
-    if op == 0:
-        model = F2NetModel(**model_conf).to(device)
-
-        optimizer = optim.Adam(model.parameters(), lr=1e-4)
-        penalty = nn.CosineEmbeddingLoss()
-        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, 
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, 
                                                             patience=0)
+    trainer = Trainer(name, model, optimizer, penalty, lr_scheduler)
 
-        trainer = Trainer('f2net-nge-(lm)-v1', model, optimizer, penalty, lr_scheduler)
+    trainer.saveSettings('weights')
+    trainer.setDataLoaders(train_data, validation_data)
+    trainer.setFeedForwardProcedure(fefo)
+    trainer.setMetrics([mPerplexity, mAccuracyF1])
 
-        trainer.saveSettings('weights')
-
-        trainer.setDataLoaders(train_data, validation_data)
-
-        print('loss:', trainer.train(noGradEmb_Call, seq_len=128, n_epochs=100, 
-                                     clip=0.25, device=device))
-
-    elif op == 1:
-        model = F2NetForLanguageModeling(**model_conf).to(device)
-
-        optimizer = optim.Adam(model.parameters(), lr=1e-4)
-        penalty = nn.CrossEntropyLoss()
-        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, 
-                                                            patience=0)
-
-        trainer = Trainer('f2net-tkc-(lm)-v1', model, optimizer, penalty, lr_scheduler)
-
-        trainer.setDataLoaders(train_data, validation_data)
-
-        trainer.saveSettings('weights')
-
-        print('loss:', trainer.train(tokenClassifier_Call, seq_len=128, n_epochs=100, 
-                                     clip=0.25, device=device))
+    trainer.train(seq_len=128, n_epochs=100, clip=0.25, device=device)

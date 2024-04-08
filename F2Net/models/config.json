@@ -1,0 +1,17 @@
+{
+    "f2net":{"n_blocks":8,
+            "heads":8, 
+            "d_model": 128, 
+            "hidden":128},
+
+    "fnet":{"n_blocks":8,
+            "heads":1, 
+            "d_model": 128, 
+            "hidden":128},
+
+    "transformer":{"n_blocks":8,
+                   "heads":8, 
+                   "d_model": 128, 
+                   "hidden":128}
+
+}
