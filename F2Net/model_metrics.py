@@ -39,3 +39,15 @@ def mAccuracyF1(logits, target, device, dest=None):
     if dest is not None:
         adderIn(dest, 'acc', acc.item() * seq_len)
         adderIn(dest, 'f1', f1.item() * seq_len)
+
+def mCosineSimilarity(logits, target, device, dest=None):
+    seq_len = logits.size(-2)
+
+    cos_metric = nn.CosineSimilarity(dim=-1, eps=1e-6)
+
+    cosmn = torch.mean(cos_metric(logits, target), dim=-1)
+    cosmd = torch.median(cos_metric(logits, target), dim=-1).values
+
+    if dest is not None:
+        adderIn(dest, 'cos(mean)', cosmn.item())
+        adderIn(dest, 'cos(median)', cosmd.item())

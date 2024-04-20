@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from models.transformer import MultiHeadModule, FeedForward
 from models.zutils import PositionalEncoding
 
 class F2NetHead(nn.Module):
@@ -29,44 +30,13 @@ class F2NetHead(nn.Module):
         seq = torch.fft.ifft(fixed, dim=-2)
 
         return torch.real(seq)
-
-class F2NetMHM(nn.Module):
-    def __init__(self, heads: int, d_model: int) -> None:
-        super(F2NetMHM, self).__init__()
-
-        d = d_model // heads
-        self.heads = nn.ModuleList(
-            [F2NetHead(d_model, d) for _ in range(heads)])
-        self.Wmhm = nn.Linear(d_model, d_model)
-        self.l_norm = nn.LayerNorm(d_model, eps=1e-5, elementwise_affine=False)
-
-    def forward(self, x: torch.Tensor):        
-        x_ = torch.cat([head(x) for head in self.heads], dim=-1)
-        out = self.l_norm(self.Wmhm(x_) + x)
-
-        return out
-    
-class F2NetFFN(nn.Module):
-    def __init__(self, d_model: int, hidden: int) -> None:
-        super(F2NetFFN, self).__init__()
-
-        self.W1 = nn.Linear(d_model, hidden)
-        self.W2 = nn.Linear(hidden, d_model)
-        self.l_norm = nn.LayerNorm(d_model, eps=1e-5, elementwise_affine=False)
-        
-    def forward(self, x: torch.Tensor):
-        out1 = F.gelu(self.W1(x))
-        out2 = F.gelu(self.W2(out1))
-        out = self.l_norm(out2 + x)
-
-        return out
     
 class F2NetBlock(nn.Module):
     def __init__(self, heads: int, d_model: int, hidden: int) -> None:
         super(F2NetBlock, self).__init__()
 
-        self.body = nn.ModuleList([F2NetMHM(heads, d_model),
-                                   F2NetFFN(d_model, hidden)
+        self.body = nn.ModuleList([MultiHeadModule(F2NetHead, heads, d_model),
+                                   FeedForward(d_model, hidden)
         ])
 
     def forward(self, x: torch.Tensor):

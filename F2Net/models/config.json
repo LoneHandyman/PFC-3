@@ -1,17 +1,37 @@
 {
-    "f2net":{"n_blocks":8,
-            "heads":8, 
-            "d_model": 128, 
-            "hidden":128},
+    "f2net":{"heads":8, 
+             "d_model": 128, 
+             "hidden":128,
+             "name":"f2net-(lm)",
+             "lr":1e-4,
+             "feature-extractors": ["f2net:8"]},
 
-    "fnet":{"n_blocks":8,
-            "heads":1, 
+    "fnet":{"heads":1, 
             "d_model": 128, 
-            "hidden":128},
+            "hidden":128,
+            "name":"fnet-(lm)",
+            "lr":1e-3,
+            "feature-extractors": ["fnet:8"]},
 
-    "transformer":{"n_blocks":8,
-                   "heads":8, 
+    "transformer":{"heads":8, 
                    "d_model": 128, 
-                   "hidden":128}
+                   "hidden":128,
+                   "name":"tfmr-(lm)",
+                   "lr":1e-5,
+                   "feature-extractors": ["attn:8"]},
+
+    "hybrid-fnet-attn":{"heads":8, 
+                        "d_model": 128, 
+                        "hidden":128,
+                        "name":"h-afnet-(lm)",
+                        "lr":1e-4,
+                        "feature-extractors": ["attn:2", "fnet:6"]},
+
+    "hybrid-f2net-attn":{"heads":8, 
+                         "d_model": 128, 
+                         "hidden":128,
+                         "name":"h-af2net-(lm)",
+                         "lr":1e-5,
+                         "feature-extractors": ["attn:2", "f2net:6"]}
 
 }

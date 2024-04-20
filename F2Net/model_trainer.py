@@ -1,11 +1,38 @@
 import torch
 import torch.nn as nn
 import time
+import sys
+import json
 
 from tqdm import tqdm
 
 from typing import Callable, Tuple
 from data_builder import get_batch
+from models.zutils import build_predictor
+
+def model_factory(config_path: str, op: int, vocab_len: int):
+    with open(config_path, 'r') as fjsn:
+        gConfig = json.load(fjsn)
+
+    config = None
+    
+    if op == 0:
+        config = gConfig['f2net']
+    elif op==1:
+        config = gConfig['fnet']
+    elif op==2:
+        config = gConfig['transformer']
+    elif op==3:
+        config = gConfig['hybrid-fnet-attn']
+    elif op==4:
+        config = gConfig['hybrid-f2net-attn']
+
+    config['vocab_len'] = vocab_len
+    name = config['name']
+    lr = config['lr']
+    model = build_predictor(**config)
+
+    return name, model, lr
 
 class Trainer:
     def __init__(self, name, model, optimizer, penalty, lr_scheduler):
@@ -46,7 +73,9 @@ class Trainer:
 
     def _check_params(self):
         num_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        print(f'The model [{self.name}] has {num_params:,} trainable parameters')
+        float_size = sys.getsizeof(next(iter(self.model.parameters())).dtype)
+        gb_size = (num_params * float_size) / (1024**3)
+        print(f'The model [{self.name}] has {num_params:,} trainable parameters ({gb_size:.3f} gb)')
 
     def evaluate(self, seq_len: int, device: torch.device):
         assert(self.eval_data is not None)
@@ -123,6 +152,8 @@ class Trainer:
 
         self.model.to(device)
 
+        mean_txb = 0
+
         for epoch in range(n_epochs):
 
             train_loss, timexbatch = self.fit(seq_len, clip, device, (epoch+1, n_epochs))
@@ -133,8 +164,9 @@ class Trainer:
             if eval_loss < best_eval_loss:
                 best_eval_loss = eval_loss
                 torch.save(self.model.state_dict(), self.path + self.name + '.pt')
-
-            print(f'Completed epoch #{epoch+1} [time/batch={timexbatch:.3f} ms]:')
+            
+            mean_txb += timexbatch
+            print(f'Completed epoch #{epoch+1} [time/batch={timexbatch:.3f} ms >> mean={mean_txb/(epoch + 1):.3f} ms]:')
             print('\t', end='<')
             for key, result in self.metric_results.items():
                 print(f'[{key}]:{result:.4f}', end=', ')
