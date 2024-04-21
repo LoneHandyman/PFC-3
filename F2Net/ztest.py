@@ -24,8 +24,8 @@ if __name__ == '__main__':
         dataset_name='wikitext',
         dataset_config='wikitext-2-raw-v1',
         tokenizer_name='basic_english',
-        min_freq=25,
-        batch_size=128
+        min_freq=12,
+        batch_size=64
     )
 
     test_data = wiki2.test_data
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     model.load_state_dict(torch.load('weights/' + name + '.pt'))
 
-    prompt = 'Think about'
+    prompt = 'Think about me and my life. I want'
     max_seq_len = 30
     seed = 0
 

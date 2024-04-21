@@ -6,30 +6,20 @@ from torch.nn import functional as F
 from models.transformer import MultiHeadModule, FeedForward
 from models.zutils import PositionalEncoding
 
+from models.fnet import HartleyTokenMixer
+
 class F2NetHead(nn.Module):
-    def __init__(self, d_model: int, d: int) -> None:
+    def __init__(self, **kwargs) -> None:
         super(F2NetHead, self).__init__()
 
-        self.Wp = nn.Linear(d_model, d)
-        self.Wa = nn.Linear(d, d)
-        self.Wb = nn.Linear(d, d)
+        self.mixer = HartleyTokenMixer(**kwargs)
+        self.W1 = nn.Linear(kwargs['d_model'], kwargs['d_model'])
+        #self.conv1 = nn.Conv1d(in_channels=d_model * 2, out_channels=d, kernel_size=3, padding=1)
 
-    def forward(self, x: torch.Tensor):
-        #x : [B, S, E]
-        p = self.Wp(x)
-
-        features = torch.fft.fft(p, dim=-1)
-
-        r = torch.real(features)
-        i = torch.imag(features)
-
-        rr = r + self.Wa(r)
-        ii = i + self.Wb(i)
-        fixed = torch.complex(rr, ii)
-
-        seq = torch.fft.ifft(fixed, dim=-2)
-
-        return torch.real(seq)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        mix1 = self.mixer(x)
+        power1 = self.W1(self.mixer(-mix1))
+        return power1
     
 class F2NetBlock(nn.Module):
     def __init__(self, heads: int, d_model: int, hidden: int) -> None:

@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class SelfAttnHead(nn.Module):
-    def __init__(self, d_model: int, d: int) -> None:
+    def __init__(self, **kwargs) -> None:
         super(SelfAttnHead, self).__init__()
-        self.Wq = nn.Linear(d_model, d)
-        self.Wk = nn.Linear(d_model, d)
-        self.Wv = nn.Linear(d_model, d)
+        self.Wq = nn.Linear(kwargs['d_model'], kwargs['d'])
+        self.Wk = nn.Linear(kwargs['d_model'], kwargs['d'])
+        self.Wv = nn.Linear(kwargs['d_model'], kwargs['d'])
 
     def forward(self, x: torch.Tensor):
         Q = self.Wq(x)

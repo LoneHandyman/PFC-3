@@ -6,15 +6,29 @@ from typing import Type
 
 from models.zutils import PositionalEncoding
 
+class SingleHeadModule(nn.Module):
+    def __init__(self, operationClass: Type[nn.Module], **kwargs) -> None:
+        super(SingleHeadModule, self).__init__()
+
+        self.op = operationClass(**kwargs)
+        self.l_norm = nn.LayerNorm(kwargs['d_model'], eps=1e-5, elementwise_affine=False)
+
+    def forward(self, x: torch.Tensor):
+        x_ = self.op(x)
+        out = self.l_norm(x_ + x)
+
+        return out
+
 class MultiHeadModule(nn.Module):
-    def __init__(self, operationClass: Type[nn.Module], heads: int, d_model: int) -> None:
+    def __init__(self, operationClass: Type[nn.Module], **kwargs) -> None:
         super(MultiHeadModule, self).__init__()
 
-        d = d_model // heads
+        kwargs['d'] = kwargs['d_model'] // kwargs['heads']
+
         self.heads = nn.ModuleList(
-            [operationClass(d_model, d) for _ in range(heads)])
-        self.Wmhm = nn.Linear(d_model, d_model)
-        self.l_norm = nn.LayerNorm(d_model, eps=1e-5, elementwise_affine=False)
+            [operationClass(**kwargs) for _ in range(kwargs['heads'])])
+        self.Wmhm = nn.Linear(kwargs['d_model'], kwargs['d_model'])
+        self.l_norm = nn.LayerNorm(kwargs['d_model'], eps=1e-5, elementwise_affine=False)
 
     def forward(self, x: torch.Tensor):        
         x_ = torch.cat([head(x) for head in self.heads], dim=-1)
@@ -32,19 +46,15 @@ class FeedForward(nn.Module):
         self.l_norm = nn.LayerNorm(d_model, eps=1e-5, elementwise_affine=False)
         
     def forward(self, x: torch.Tensor):
-        out1 = F.gelu(self.W1(x))
-        out2 = self.W2(self.drop(out1))
-        out = self.l_norm(out2 + x)
+        out = self.W2(F.gelu(self.W1(x)))
+        out = self.l_norm(self.drop(out) + x)
 
         return out
 
 class TransformerBlock(nn.Module):
-    def __init__(self, feature_extractor: Type[nn.Module], **kwargs) -> None:
+    def __init__(self, sequence_mixer: Type[nn.Module], **kwargs) -> None:
         super(TransformerBlock, self).__init__()
-
-        self.body = nn.ModuleList([MultiHeadModule(feature_extractor, 
-                                                   kwargs['heads'], 
-                                                   kwargs['d_model']),
+        self.body = nn.ModuleList([sequence_mixer,
                                    FeedForward(kwargs['d_model'], kwargs['hidden'])
         ])
 

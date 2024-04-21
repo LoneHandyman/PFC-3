@@ -2,6 +2,9 @@ torch
 torchtext
 torcheval
 torchmetrics
+transformers>=4.4
+evaluate
+bert_score
 datasets
 portalocker
 torchdata

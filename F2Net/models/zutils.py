@@ -24,7 +24,7 @@ class PositionalEncoding(nn.Module):
     
         return self.dropout(x)
 
-from models.transformer import TransformerModel, TransformerBlock
+from models.transformer import TransformerModel, TransformerBlock, MultiHeadModule, SingleHeadModule
 from models.attention import SelfAttnHead
 from models.fnet import FNetTokenMixer
 from models.f2net import F2NetHead
@@ -51,10 +51,14 @@ def build_predictor(**kwargs) -> nn.Module:
 
         for _ in range(int(n_blocks)):
             if id == 'attn':
-                model.add_block(TransformerBlock(SelfAttnHead, **kwargs))
+                model.add_block(TransformerBlock(MultiHeadModule(SelfAttnHead, **kwargs), 
+                                                 **kwargs))
             elif id == 'fnet':
-                model.add_block(TransformerBlock(FNetTokenMixer, **kwargs))
+                model.add_block(TransformerBlock(SingleHeadModule(FNetTokenMixer, **kwargs), 
+                                                 **kwargs))
             elif id == 'f2net':
-                model.add_block(TransformerBlock(F2NetHead, **kwargs))
+                tblock = TransformerBlock(SingleHeadModule(F2NetHead, **kwargs), 
+                                          **kwargs)
+                model.add_block(tblock)
     
     return ModelForNextTokenPrediction(model, **kwargs)

@@ -11,6 +11,7 @@ from model_trainer import Trainer, model_factory
 from model_metrics import *
 
 import sys
+import os
 
 def tokenClassifier_Call(model: nn.Module, penalty: nn.CrossEntropyLoss, 
                         src: torch.LongTensor, target: torch.LongTensor,
@@ -52,8 +53,8 @@ if __name__ == '__main__':
         dataset_name='wikitext',
         dataset_config='wikitext-2-raw-v1',
         tokenizer_name='basic_english',
-        min_freq=25,
-        batch_size=128
+        min_freq=12,
+        batch_size=64
     )
 
     train_data = wiki2.train_data
@@ -63,15 +64,27 @@ if __name__ == '__main__':
 
     name, model, lr = model_factory('models/config.json', op, wiki2.vocab_length())
 
+    wdir = 'weights'
+
+    if not os.path.exists(wdir):
+        os.makedirs(wdir)
+
+    if len(sys.argv) == 3 and sys.argv[2] == '-bkp':
+        model.load_state_dict(torch.load(wdir + '/' + name + '.pt'))
+
     optimizer = optim.Adam(model.parameters(), lr=lr)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, 
                                                             patience=0)
     trainer = Trainer(name, model, optimizer, nn.CrossEntropyLoss(), lr_scheduler)
 
-    trainer.saveSettings('weights')
+    trainer.saveSettings(wdir)
     trainer.setDataLoaders(train_data, validation_data)
     trainer.setFeedForwardProcedure(tokenClassifier_Call)
 
     trainer.setMetrics([mPerplexity, mAccuracyF1])
 
-    trainer.train(seq_len=128, n_epochs=100, clip=0.25, device=device)
+    try:
+        trainer.train(seq_len=128, n_epochs=100, clip=0.25, device=device)
+    except KeyboardInterrupt:
+        print("\n[STATUS]: Keyboard interruption.")
+        sys.exit(0)
