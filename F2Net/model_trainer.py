@@ -10,6 +10,32 @@ from typing import Callable, Tuple
 from data_builder import get_batch
 from models.zutils import build_predictor
 
+def tokenClassifier_Call(model: nn.Module, penalty: nn.CrossEntropyLoss, 
+                        src: torch.LongTensor, target: torch.LongTensor,
+                        device: torch.device):
+    batch_size, seq_len = src.shape[0], src.shape[1]
+    logits = model(src)
+
+    prediction = logits.reshape(batch_size * seq_len, -1)   
+    target_r = target.reshape(-1)
+    loss = penalty(prediction, target_r)
+
+    return loss, logits, target
+
+def noGradEmb_Call(model: nn.Module, penalty, src: torch.LongTensor, 
+                   target: torch.LongTensor, device: torch.device):
+    y_pred, y_true = model(src, target)
+    batch_size, seq_len = y_pred.size(0), y_pred.size(1)
+
+    y_pred = y_pred.reshape(batch_size * seq_len, -1).to(device)
+    y_true = y_true.reshape(batch_size * seq_len, -1).to(device)
+
+    if isinstance(penalty, nn.CosineEmbeddingLoss):
+        loss = penalty(y_pred, y_true, torch.ones(batch_size * seq_len).to(device))
+    elif isinstance(penalty, nn.KLDivLoss):
+        loss = penalty(y_pred, y_true)
+    return loss, y_pred, y_true
+
 def model_factory(config_path: str, op: int, vocab_len: int):
     with open(config_path, 'r') as fjsn:
         gConfig = json.load(fjsn)

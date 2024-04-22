@@ -6,9 +6,17 @@ import torch.nn as nn
 
 from data_builder import TextDatasetLoader
 from model_tester import generate
-from model_trainer import model_factory
+from model_trainer import Trainer, model_factory, tokenClassifier_Call
+from model_metrics import mAccuracyF1, mPerplexity
 
 import sys
+
+def predict_next_tokens(model, prompt, max_seq_len, dataloader, seed, device):
+    temperatures = [0.5, 0.7, 0.75, 0.8, 1.0]
+    for t in temperatures:
+        generation = generate(prompt, max_seq_len, t, model, dataloader.tokenizer, 
+                            dataloader.vocab, device, seed)
+        print(str(t)+'\n'+' '.join(generation)+'\n')
 
 if __name__ == '__main__':
 
@@ -36,12 +44,17 @@ if __name__ == '__main__':
 
     model.load_state_dict(torch.load('weights/' + name + '.pt'))
 
-    prompt = 'Think about me and my life. I want'
-    max_seq_len = 30
-    seed = 0
+    model.to(device)
 
-    temperatures = [0.5, 0.7, 0.75, 0.8, 1.0]
-    for temperature in temperatures:
-        generation = generate(prompt, max_seq_len, temperature, model, wiki2.tokenizer, 
-                            wiki2.vocab, device, seed)
-        print(str(temperature)+'\n'+' '.join(generation)+'\n')
+    evaluator = Trainer(name, model, None, nn.CrossEntropyLoss(), None)
+    evaluator.setDataLoaders(None, test_data)
+    evaluator.setFeedForwardProcedure(tokenClassifier_Call)
+    evaluator.setMetrics([mPerplexity, mAccuracyF1])
+
+    test_loss = evaluator.evaluate(seq_len=128, device=device)
+    
+    print(f'loss:{test_loss:.3f}')
+    print(evaluator.metric_results)
+
+    predict_next_tokens(model, 'Think about me and', max_seq_len=40, 
+                        dataloader=wiki2, seed=0, device=device)

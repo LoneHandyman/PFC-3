@@ -10,7 +10,7 @@
             "d_model": 192, 
             "hidden":512,
             "name":"fnet-(lm)",
-            "lr":1e-3,
+            "lr":1e-4,
             "feature-extractors": ["fnet:8"]},
 
     "transformer":{"heads":8, 
