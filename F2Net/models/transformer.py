@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from typing import Type
+from typing import Type, Callable
 
 from models.zutils import PositionalEncoding
 
@@ -15,9 +15,8 @@ class SingleHeadModule(nn.Module):
 
     def forward(self, x: torch.Tensor):
         x_ = self.op(x)
-        out = self.l_norm(x_ + x)
 
-        return out
+        return self.l_norm(x_)
 
 class MultiHeadModule(nn.Module):
     def __init__(self, operationClass: Type[nn.Module], **kwargs) -> None:
@@ -30,11 +29,10 @@ class MultiHeadModule(nn.Module):
         self.Wmhm = nn.Linear(kwargs['d_model'], kwargs['d_model'])
         self.l_norm = nn.LayerNorm(kwargs['d_model'], eps=1e-5, elementwise_affine=False)
 
-    def forward(self, x: torch.Tensor):        
+    def forward(self, x: torch.Tensor):
         x_ = torch.cat([head(x) for head in self.heads], dim=-1)
-        out = self.l_norm(self.Wmhm(x_) + x)
 
-        return out
+        return self.l_norm(self.Wmhm(x_))
 
 class FeedForward(nn.Module):
     def __init__(self, d_model: int, hidden: int, dropout: int=0.1) -> None:
@@ -47,9 +45,8 @@ class FeedForward(nn.Module):
         
     def forward(self, x: torch.Tensor):
         out = self.W2(F.gelu(self.W1(x)))
-        out = self.l_norm(self.drop(out) + x)
 
-        return out
+        return self.l_norm(self.drop(out))
 
 class TransformerBlock(nn.Module):
     def __init__(self, sequence_mixer: Type[nn.Module], **kwargs) -> None:
@@ -60,7 +57,7 @@ class TransformerBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         for module in self.body:
-            x = module(x)
+            x = module(x) + x
 
         return x
 

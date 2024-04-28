@@ -20,3 +20,7 @@ class HartleyTokenMixer(nn.Module):
         mix = torch.fft.fft(hidden, dim=-2)
 
         return torch.real(mix) - torch.imag(mix)
+    
+def hartley(x: torch.Tensor, dim: int):
+    ft = torch.fft.fft(x, dim=dim)
+    return torch.real(ft) - torch.imag(ft)

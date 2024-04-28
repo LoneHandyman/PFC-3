@@ -1,5 +1,5 @@
 {
-    "f2net":{"heads":1, 
+    "f2net":{"heads":8, 
              "d_model": 192, 
              "hidden":512,
              "name":"f2net-(lm)",

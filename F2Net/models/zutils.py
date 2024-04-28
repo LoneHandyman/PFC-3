@@ -27,14 +27,14 @@ class PositionalEncoding(nn.Module):
 from models.transformer import TransformerModel, TransformerBlock, MultiHeadModule, SingleHeadModule
 from models.attention import SelfAttnHead
 from models.fnet import FNetTokenMixer
-from models.f2net import F2NetHead
+from models.f2net import F2NetHead, hartley
 
 class ModelForNextTokenPrediction(nn.Module):
     def __init__(self, encoder: nn.Module, **kwargs) -> None:
         super(ModelForNextTokenPrediction, self).__init__()
 
         self.model = encoder
-        self.fc = nn.Linear(kwargs['d_model'], kwargs['vocab_len'])
+        self.fc = nn.Linear(kwargs['d_model'], kwargs['vocab_len'], bias=False)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.model(x)
@@ -57,8 +57,7 @@ def build_predictor(**kwargs) -> nn.Module:
                 model.add_block(TransformerBlock(SingleHeadModule(FNetTokenMixer, **kwargs), 
                                                  **kwargs))
             elif id == 'f2net':
-                tblock = TransformerBlock(SingleHeadModule(F2NetHead, **kwargs), 
-                                          **kwargs)
-                model.add_block(tblock)
+                model.add_block(TransformerBlock(SingleHeadModule(F2NetHead, **kwargs), 
+                                          **kwargs))
     
     return ModelForNextTokenPrediction(model, **kwargs)
