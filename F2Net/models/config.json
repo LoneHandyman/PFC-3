@@ -4,6 +4,7 @@
              "hidden":512,
              "name":"f2net-(lm)",
              "lr":1e-4,
+             "d_conv":5,
              "feature-extractors": ["f2net:8"]},
 
     "fnet":{"heads":1, 
@@ -32,6 +33,7 @@
                          "hidden":512,
                          "name":"h-af2net-(lm)",
                          "lr":1e-5,
+                         "d_conv":5,
                          "feature-extractors": ["attn:2", "f2net:6"]}
 
 }

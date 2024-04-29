@@ -57,7 +57,7 @@ def build_predictor(**kwargs) -> nn.Module:
                 model.add_block(TransformerBlock(SingleHeadModule(FNetTokenMixer, **kwargs), 
                                                  **kwargs))
             elif id == 'f2net':
-                model.add_block(TransformerBlock(SingleHeadModule(F2NetHead, **kwargs), 
+                model.add_block(TransformerBlock(MultiHeadModule(F2NetHead, **kwargs), 
                                           **kwargs))
     
     return ModelForNextTokenPrediction(model, **kwargs)
