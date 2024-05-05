@@ -16,7 +16,7 @@ class SingleHeadModule(nn.Module):
     def forward(self, x: torch.Tensor):
         x_ = self.op(x)
 
-        return self.l_norm(x_)
+        return self.l_norm(x_ + x)
 
 class MultiHeadModule(nn.Module):
     def __init__(self, operationClass: Type[nn.Module], **kwargs) -> None:
@@ -32,7 +32,7 @@ class MultiHeadModule(nn.Module):
     def forward(self, x: torch.Tensor):
         x_ = torch.cat([head(x) for head in self.heads], dim=-1)
 
-        return self.l_norm(self.Wmhm(x_))
+        return self.l_norm(self.Wmhm(x_) + x)
 
 class FeedForward(nn.Module):
     def __init__(self, d_model: int, hidden: int, dropout: int=0.1) -> None:
@@ -46,7 +46,7 @@ class FeedForward(nn.Module):
     def forward(self, x: torch.Tensor):
         out = self.W2(F.gelu(self.W1(x)))
 
-        return self.l_norm(self.drop(out))
+        return self.l_norm(self.drop(out) + x)
 
 class TransformerBlock(nn.Module):
     def __init__(self, sequence_mixer: Type[nn.Module], **kwargs) -> None:
@@ -57,7 +57,7 @@ class TransformerBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         for module in self.body:
-            x = module(x) + x
+            x = module(x)
 
         return x
 
