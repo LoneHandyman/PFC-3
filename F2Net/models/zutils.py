@@ -27,7 +27,7 @@ class PositionalEncoding(nn.Module):
 from models.transformer import TransformerModel, TransformerBlock, MultiHeadModule, SingleHeadModule
 from models.attention import SelfAttnHead
 from models.fnet import FNetTokenMixer
-from models.f2net import F2NetHead, hartley
+from models.summer import Summer
 
 class ModelForNextTokenPrediction(nn.Module):
     def __init__(self, encoder: nn.Module, **kwargs) -> None:
@@ -56,8 +56,8 @@ def build_predictor(**kwargs) -> nn.Module:
             elif id == 'fnet':
                 model.add_block(TransformerBlock(SingleHeadModule(FNetTokenMixer, **kwargs), 
                                                  **kwargs))
-            elif id == 'f2net':
-                model.add_block(TransformerBlock(MultiHeadModule(F2NetHead, **kwargs), 
+            elif id == 'summer':
+                model.add_block(TransformerBlock(SingleHeadModule(Summer, **kwargs), 
                                           **kwargs))
     
     return ModelForNextTokenPrediction(model, **kwargs)

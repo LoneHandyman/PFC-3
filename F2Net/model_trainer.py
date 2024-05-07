@@ -43,7 +43,7 @@ def model_factory(config_path: str, op: int, vocab_len: int):
     config = None
     
     if op == 0:
-        config = gConfig['f2net']
+        config = gConfig['summer']
     elif op==1:
         config = gConfig['fnet']
     elif op==2:
