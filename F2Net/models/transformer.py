@@ -51,8 +51,9 @@ class FeedForward(nn.Module):
 class TransformerBlock(nn.Module):
     def __init__(self, sequence_mixer: Type[nn.Module], **kwargs) -> None:
         super(TransformerBlock, self).__init__()
-        self.body = nn.ModuleList([sequence_mixer,
-                                   FeedForward(kwargs['d_model'], kwargs['hidden'])
+        self.body = nn.ModuleList([
+            sequence_mixer,
+            FeedForward(kwargs['d_model'], kwargs['hidden'])
         ])
 
     def forward(self, x: torch.Tensor):
@@ -61,13 +62,24 @@ class TransformerBlock(nn.Module):
 
         return x
 
+class PassModule(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x
+
 class TransformerModel(nn.Module):
     def __init__(self, **kwargs) -> None:
         super(TransformerModel, self).__init__()
         
         self.embedding = nn.Embedding(kwargs['vocab_len'], kwargs['d_model'])
-
         self.pos_encoding = PositionalEncoding(kwargs['d_model'])
+
+        if 'pos_enc' in kwargs and kwargs['pos_enc'] == False:
+            self.pos_encoding = PassModule()
+
+
         self.blocks = nn.ModuleList()
 
     def add_block(self, block: TransformerBlock):

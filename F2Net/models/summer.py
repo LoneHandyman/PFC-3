@@ -48,6 +48,8 @@ class Summer(nn.Module):
         self.theta_log = nn.Parameter(theta_log, requires_grad=True)
         self.gamma_log = nn.Parameter(gamma_log, requires_grad=True)
 
+        self.dropout = nn.Dropout(p=0.2)
+
     def initializer(self):
         r_min, r_max = 0.9, 0.999
         u1 = np.random.random(self.d_model)
@@ -87,7 +89,7 @@ class Summer(nn.Module):
         )
 
         return self.out_proj(
-            torch.cat([output_real, output_imag], dim=-1) * F.silu(g)
+            self.dropout(torch.cat([output_real, output_imag], dim=-1) * F.silu(g))
         )
     
     

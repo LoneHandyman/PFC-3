@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from typing import Callable, Tuple
 from data_builder import get_batch
-from models.zutils import build_predictor
+from models.model_builder import build_predictor
 
 def tokenClassifier_Call(model: nn.Module, penalty: nn.CrossEntropyLoss, 
                         src: torch.LongTensor, target: torch.LongTensor,
@@ -40,18 +40,17 @@ def model_factory(config_path: str, op: int, vocab_len: int):
     with open(config_path, 'r') as fjsn:
         gConfig = json.load(fjsn)
 
-    config = None
-    
-    if op == 0:
-        config = gConfig['summer']
-    elif op==1:
-        config = gConfig['fnet']
-    elif op==2:
-        config = gConfig['transformer']
-    elif op==3:
-        config = gConfig['hybrid-fnet-attn']
-    elif op==4:
-        config = gConfig['hybrid-f2net-attn']
+    models = list(gConfig.keys())
+
+    assert(op < len(models), 'Model not found, given value can\'t match model\'s ids.\n')
+
+    print('|>', [(i, m) for i, m in enumerate(models)])
+
+    confirmation = input('Confirm?[y]: ')
+    if confirmation.lower() != 'y':
+        exit(0)
+
+    config = gConfig[models[op]]
 
     config['vocab_len'] = vocab_len
     name = config['name']
