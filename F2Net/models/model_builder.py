@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from models.transformer import TransformerModel, TransformerBlock, MultiHeadModule, SingleHeadModule
-from models.attention import SelfAttnHead
+from models.attention import SelfAttention
 from models.fnet import FNetTokenMixer
 from models.summer import Summer
 
@@ -28,7 +28,7 @@ def build_predictor(**kwargs) -> nn.Module:
 
         for _ in range(int(n_blocks)):
             if id == 'attn':
-                model.add_block(TransformerBlock(MultiHeadModule(SelfAttnHead, **kwargs), 
+                model.add_block(TransformerBlock(MultiHeadModule(SelfAttention, **kwargs), 
                                                  **kwargs))
             elif id == 'fnet':
                 model.add_block(TransformerBlock(SingleHeadModule(FNetTokenMixer, **kwargs), 
