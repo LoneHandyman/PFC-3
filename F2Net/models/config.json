@@ -1,9 +1,9 @@
 {
-    "summer":{"heads":8, 
+    "summer":{"heads":1, 
              "d_model": 256, 
              "hidden":512,
              "name":"summer-(lm)",
-             "lr":1e-4,
+             "lr":1e-5,
              "d_conv":5,
              "pos_enc":false,
              "feature-extractors": ["summer:8"]},
@@ -16,7 +16,7 @@
             "feature-extractors": ["linf:8"]},
 
     "transformer":{"heads":8, 
-                   "d_model": 192, 
+                   "d_model": 256, 
                    "hidden":512,
                    "name":"tfmr-(lm)",
                    "lr":1e-5,

@@ -33,7 +33,7 @@ if __name__ == '__main__':
         dataset_config='wikitext-2-raw-v1',
         tokenizer_name='basic_english',
         min_freq=12,
-        batch_size=32
+        batch_size=16
     )
 
     test_data = wiki2.test_data
@@ -56,5 +56,14 @@ if __name__ == '__main__':
     print(f'loss:{test_loss:.3f}')
     print(evaluator.metric_results)
 
-    predict_next_tokens(model, 'Think about me and', max_seq_len=40, 
-                        dataloader=wiki2, seed=0, device=device)
+    prompts = [
+        'Think about me and',
+        'Consider the possibilities, where the',
+        'Reflect on love and its',
+        'Imagine a world without limits',
+        'Contemplate the mysteries of the'
+    ]
+
+    for p in prompts:
+        predict_next_tokens(model, p, max_seq_len=46, 
+                            dataloader=wiki2, seed=0, device=device)

@@ -9,6 +9,7 @@ from tqdm import tqdm
 from typing import Callable, Tuple
 from data_builder import get_batch
 from models.model_builder import build_predictor
+from model_metrics import adderIn
 
 def tokenClassifier_Call(model: nn.Module, penalty: nn.CrossEntropyLoss, 
                         src: torch.LongTensor, target: torch.LongTensor,
@@ -114,11 +115,18 @@ class Trainer:
         num_batches = data.shape[-1]
 
         with torch.no_grad():
+
+            total_time = 0
+
             for idx in range(0, num_batches - 1, seq_len):
                 src, target = get_batch(data, seq_len, idx)
                 src, target = src.to(device), target.to(device)
 
+                start_time = time.time()
+
                 loss, pred, target = self.fefo_steps(self.model, self.penalty, src, target, device)
+
+                adderIn(self.metric_results, 'ms/batch', (time.time() - start_time) * 1000)
 
                 epoch_loss += loss.item() * seq_len
 

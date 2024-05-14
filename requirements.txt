@@ -4,6 +4,7 @@ torcheval
 torchmetrics
 transformers>=4.4
 evaluate
+einops
 bert_score
 datasets
 portalocker

@@ -65,7 +65,7 @@ def eval_complexity(model, input: torch.Tensor, min_seq_len: int,
         peak_gb = round(peak_gb, 3)
         measures[keys[0]].append(total_time)
         measures[keys[1]].append(peak_gb)
-        measures[keys[2]].append(round(math.log(peak_gb, seq_len), 3))
+        measures[keys[2]].append(round(math.log2(peak_gb), 8))
     
     return measures
 

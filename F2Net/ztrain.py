@@ -30,7 +30,7 @@ if __name__ == '__main__':
         dataset_config='wikitext-2-raw-v1',
         tokenizer_name='basic_english',
         min_freq=12,
-        batch_size=32
+        batch_size=16
     )
 
     train_data = wiki2.train_data
