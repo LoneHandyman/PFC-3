@@ -1,4 +1,4 @@
-F2Net/__pycache__/
-F2Net/models/__pycache__/
-F2Net/weights/
-F2Net/gbg/
+implementation/__pycache__/
+implementation/models/__pycache__/
+implementation/weights/
+implementation/gbg/

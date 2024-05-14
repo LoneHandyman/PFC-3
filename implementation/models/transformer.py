@@ -11,12 +11,11 @@ class SingleHeadModule(nn.Module):
         super(SingleHeadModule, self).__init__()
 
         self.op = operationClass(**kwargs)
-        self.l_norm = nn.LayerNorm(kwargs['d_model'], eps=1e-5, elementwise_affine=False)
 
     def forward(self, x: torch.Tensor):
         x_ = self.op(x)
 
-        return self.l_norm(x_ + x)
+        return x_ + x
 
 class MultiHeadModule(nn.Module):
     def __init__(self, operationClass: Type[nn.Module], **kwargs) -> None:

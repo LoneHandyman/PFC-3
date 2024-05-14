@@ -49,7 +49,7 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(wdir + '/' + name + '.pt'))
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, 
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.7, 
                                                             patience=0)
     trainer = Trainer(name, model, optimizer, nn.CrossEntropyLoss(), lr_scheduler)
 

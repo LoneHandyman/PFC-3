@@ -49,6 +49,7 @@ class Summer(nn.Module):
         self.gamma_log = nn.Parameter(gamma_log, requires_grad=True)
 
         self.dropout = nn.Dropout(p=0.2)
+        self.l_norm = nn.LayerNorm(self.d_model*2, eps=1e-5, elementwise_affine=False)
 
     def initializer(self):
         r_min, r_max = 0.9, 0.999
