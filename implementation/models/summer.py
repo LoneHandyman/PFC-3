@@ -90,7 +90,11 @@ class Summer(nn.Module):
         )
 
         return self.out_proj(
-            self.dropout(torch.cat([output_real, output_imag], dim=-1) * F.silu(g))
+            self.l_norm(
+                self.dropout(
+                    torch.cat([output_real, output_imag], dim=-1) * F.silu(g)
+                )
+            )
         )
     
     
